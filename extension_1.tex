@@ -1,0 +1,30 @@
+\clearpage
+\Large{Приложение А}
+\begin{verbatim}
+        public void RecalcNormals()
+        {
+            for (int i = 0; i < Verteces.Count; i += 3)
+            {
+                var a = Verteces[i].Position;
+                var b = Verteces[i + 1].Position;
+                var c = Verteces[i + 2].Position;
+                var normal = Vector3.Normalize(Vector3.Cross(c - a, b - a));
+                var i0 = Verteces[i];
+                var i1 = Verteces[i + 1];
+                var i2 = Verteces[i + 2];
+
+                i0.Normal = i1.Normal = i2.Normal = normal;
+                Verteces[i] = i0;
+                Verteces[i + 1] = i1;
+                Verteces[i + 2] = i2;
+            }
+            FlipNormals();
+        }
+        public void FlipNormals() {
+            for (int i = 0; i < Verteces.Count; i++) {
+                var vertex = Verteces[i];
+                vertex.Normal *= -1;
+                Verteces[i] = vertex;
+            }
+        }
+\end{verbatim}
