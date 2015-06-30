@@ -1,30 +1,143 @@
 \clearpage
 \Large{Приложение А}
-\begin{verbatim}
-        public void RecalcNormals()
-        {
-            for (int i = 0; i < Verteces.Count; i += 3)
-            {
-                var a = Verteces[i].Position;
-                var b = Verteces[i + 1].Position;
-                var c = Verteces[i + 2].Position;
-                var normal = Vector3.Normalize(Vector3.Cross(c - a, b - a));
-                var i0 = Verteces[i];
-                var i1 = Verteces[i + 1];
-                var i2 = Verteces[i + 2];
+\begin{lstlisting}
+public void RecalcNormals()
+{
+    for (int i = 0; i < Verteces.Count; i += 3)
+    {
+        var a = Verteces[i].Position;
+        var b = Verteces[i + 1].Position;
+        var c = Verteces[i + 2].Position;
+        var normal = Vector3.Normalize(
+              Vector3.Cross(c - a, b - a));
+        var i0 = Verteces[i];
+        var i1 = Verteces[i + 1];
+        var i2 = Verteces[i + 2];
 
-                i0.Normal = i1.Normal = i2.Normal = normal;
-                Verteces[i] = i0;
-                Verteces[i + 1] = i1;
-                Verteces[i + 2] = i2;
-            }
-            FlipNormals();
-        }
-        public void FlipNormals() {
-            for (int i = 0; i < Verteces.Count; i++) {
-                var vertex = Verteces[i];
-                vertex.Normal *= -1;
-                Verteces[i] = vertex;
-            }
-        }
-\end{verbatim}
+        i0.Normal = i1.Normal = i2.Normal = 
+            normal;
+        Verteces[i] = i0;
+        Verteces[i + 1] = i1;
+        Verteces[i + 2] = i2;
+    }
+    FlipNormals();
+}
+public void FlipNormals() {
+    for (int i = 0; i < Verteces.Count; i++) {
+        var vertex = Verteces[i];
+        vertex.Normal *= -1;
+        Verteces[i] = vertex;
+    }
+}
+\end{lstlisting}
+
+
+\clearpage
+\Large{Приложение Б}
+\begin{lstlisting}
+__kernel void floatSquareDivPi(
+    __global float * vx, 
+    __global float * vy, 
+    __global float * vz,
+    __global float * nx, 
+    __global float * ny, 
+    __global float * nz, 
+    __global float * a, 
+    __global float * s)
+{ 
+    int i = get_global_id(0)*3;
+    float3 vec1 = (float3)(vx[i], 
+              vy[i], vz[i]); 
+    float3 vec2 = (float3)(vx[i+1], 
+               vy[i+1], vz[i+1]); 
+    float3 vec3 = (float3)(vx[i+2], 
+              vy[i+2], vz[i+2]); 
+    float A = distance(vec1, vec2);
+    float B = distance(vec2, vec3);
+    float C = distance(vec1, vec3);
+    float S = (A + B + C) / 2.0f;
+    float sq = sqrt(S * (S - A) * 
+            (S - B) * (S - C)) / M_PI;
+    s[i] = s[i+1] = s[i+2] = sq;
+}
+
+float ElementShadow(float3 v, 
+        float rSquared, 
+        float3 receiverNormal, 
+        float3 emitterNormal, 
+        float emitterArea) {
+    return (1.0f - rsqrt(emitterArea/
+               rSquared + 1.0f)) *
+    clamp(dot(emitterNormal, v), 
+              0.0f, 1.0f) *
+    clamp(4.0f * dot(receiverNormal, 
+              v), 0.0f, 1.0f);
+}
+
+__kernel void floatAO(
+               __global float * vx, 
+               __global float * vy, 
+               __global float * vz,
+	    __global float * nx, 
+               __global float * ny, 
+               __global float * nz,
+	    __global float * a, 
+               __global float * s, 
+               long from)
+{ 
+    int i = from + get_global_id(0)*3;
+    float res = 0.0f;
+    float3 v = (float3)(0, 0, 0);
+    float d2 = 0;
+    float value = 0;
+    for(int j = 0; j<count;j+=3){
+        v = (float3)(vx[j], vy[j], vz[j]) - 
+               (float3)(vx[i], vy[i], vz[i]);
+        d2 = dot(v, v) + 1e-16;                            
+        v *= rsqrt(d2);
+        value = ElementShadow(v, d2, 
+        (float3)(nx[i], ny[i], nz[i]), 
+        (float3)(nx[j], ny[j], nz[j]), 
+        s[j]);
+        res += value;
+    }                        
+ a[i] = a[i+1] = a[i+2] = 1.0f - res;
+}
+\end{lstlisting}
+
+\clearpage
+\Large{Приложение В} \newline
+\begin{table}[h]
+\begin{tabular}{|cc|}
+00:01:43.419 & \\
+00:01:44.241  & \\
+00:01:32.125  & \\
+00:01:44.158  & \\
+00:01:37.423  & \\
+\end{tabular}
+Среднее: 00:01:40.2732
+\end{table}
+
+
+\begin{table}[h]
+\begin{tabular}{|cc|}
+00:00:30.205 & \\
+00:00:29.944  & \\
+00:00:30.072  & \\
+00:00:29.832  & \\
+00:00:30.341  & \\
+\end{tabular}
+Среднее: 00:00:30.0788
+\end{table}
+
+
+\begin{table}[h]
+\begin{tabular}{|cc|}
+00:00:02.527 & \\
+00:00:02.502  & \\
+00:00:02.509  & \\
+00:00:02.549  & \\
+00:00:02.511  & \\
+\end{tabular}
+Среднее: 00:00:02.5196
+\end{table}
