@@ -1,10 +1,9 @@
 \clearpage
-\Large{Приложение А}
+\addcontentsline{toc}{section}{\rm{\Large{Приложение А}}}
 \begin{lstlisting}
 public void RecalcNormals()
 {
-    for (int i = 0; i < Verteces.Count; i += 3)
-    {
+    for (int i = 0; i < Verteces.Count; i+=3) {
         var a = Verteces[i].Position;
         var b = Verteces[i + 1].Position;
         var c = Verteces[i + 2].Position;
@@ -27,13 +26,61 @@ public void FlipNormals() {
         var vertex = Verteces[i];
         vertex.Normal *= -1;
         Verteces[i] = vertex;
-    }
-}
+    }}
 \end{lstlisting}
 
+\clearpage
+\begin{lstlisting}
+public static void AmbientOcclusionRecalc(
+          Mesh mesh) {
+    var squares = new float[
+          mesh.Verteces.Count];
+        for (int i = 0; i < 
+        mesh.Verteces.Count; 
+        i += 3) {
+            var v0 = mesh.Verteces[i];
+            var v1 = mesh.Verteces[i + 1];
+            var v2 = mesh.Verteces[i + 2];
+
+            var sq = SstlHelper.TriangleSquare(
+                           v0, v1, v2);
+            squares[i] = squares[i + 1] = 
+            squares[i + 2] = sq;
+
+        }
+
+    AorResultTotal = mesh.Verteces.Count;
+    AorResult = 0;
+    int processorCount = 
+         Environment.ProcessorCount;
+    IAsyncResult[] results = 
+    new IAsyncResult[processorCount];
+    var t = SstlHelper.NearestMod(
+          (int) (mesh.Verteces.Count/
+          (float) processorCount), 3);
+    for (int i = 0; i < processorCount; i++) {
+        Action<Mesh, float[], int, int> 
+                     aorT = AorThread;
+        results[i] = aorT.BeginInvoke(
+          mesh, squares, t*i, t, null, null);
+    }
+
+    while (true) {
+        bool all = true;
+        for (int i = 0; i < results.Length; 
+               i++) {
+            if (!results[i].IsCompleted) {
+            all = false;
+        }
+    } if (all) {
+        break;
+    }
+    Thread.Sleep(300);
+}}
+\end{lstlisting}
 
 \clearpage
-\Large{Приложение Б}
+\addcontentsline{toc}{section}{\rm{\Large{Приложение Б}}}
 \begin{lstlisting}
 __kernel void floatSquareDivPi(
     __global float * vx, 
@@ -106,7 +153,58 @@ __kernel void floatAO(
 \end{lstlisting}
 
 \clearpage
-\Large{Приложение В} \newline
+\addcontentsline{toc}{section}{\rm{\Large{Приложение В}}}
+\begin{lstlisting}
+public static void 
+AmbientOcclusionRecalc(Mesh mesh) {
+    var squares = new 
+          float[mesh.Verteces.Count];
+    for (int i = 0; i < mesh.Verteces.Count; 
+           i += 3) {
+        var v0 = mesh.Verteces[i];
+        var v1 = mesh.Verteces[i + 1];
+        var v2 = mesh.Verteces[i + 2];
+        var sq = SstlHelper.TriangleSquare(v0, 
+              v1, v2);
+        squares[i] = squares[i + 1] = 
+        squares[i + 2] = sq;
+    }
+
+    AorResultTotal = mesh.Verteces.Count;
+    AorResult = 0;
+    int processorCount = 
+         Environment.ProcessorCount;
+    IAsyncResult[] results = 
+         new IAsyncResult[processorCount];
+    var t = SstlHelper.NearestMod((int) 
+          (mesh.Verteces.Count/
+          (float) processorCount), 3);
+    for (int i = 0; i < processorCount; i++) {
+        Action<Mesh, float[], int, int> aorT = 
+                   AorThread;
+        results[i] = aorT.BeginInvoke(mesh, 
+           squares, t*i, t, null, null);
+    }
+
+    while (true) {
+        bool all = true;
+        for (int i = 0; i < results.Length; 
+               i++) {
+            if (!results[i].IsCompleted) {
+                all = false;
+            }
+        }
+        if (all) {
+           break;
+        }
+        Thread.Sleep(300);
+    }
+}
+\end{lstlisting}
+
+\clearpage
+\addcontentsline{toc}{section}{\rm{\Large{Приложение Г}}}
+Базовая реализация\newline
 \begin{table}[h]
 \begin{tabular}{|cc|}
 00:01:43.419 & \\
@@ -115,10 +213,10 @@ __kernel void floatAO(
 00:01:44.158  & \\
 00:01:37.423  & \\
 \end{tabular}
-Среднее: 00:01:40.2732
 \end{table}
+Среднее: 00:01:40.2732
 
-
+Compute shader\newline
 \begin{table}[h]
 \begin{tabular}{|cc|}
 00:00:30.205 & \\
@@ -127,10 +225,11 @@ __kernel void floatAO(
 00:00:29.832  & \\
 00:00:30.341  & \\
 \end{tabular}
-Среднее: 00:00:30.0788
 \end{table}
+Среднее: 00:00:30.0788
 
 
+OpenCL\newline
 \begin{table}[h]
 \begin{tabular}{|cc|}
 00:00:02.527 & \\
@@ -139,5 +238,5 @@ __kernel void floatAO(
 00:00:02.549  & \\
 00:00:02.511  & \\
 \end{tabular}
-Среднее: 00:00:02.5196
 \end{table}
+Среднее: 00:00:02.5196
